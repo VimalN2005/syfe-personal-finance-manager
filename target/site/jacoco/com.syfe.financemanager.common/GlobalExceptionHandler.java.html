@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GlobalExceptionHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">personal-finance-manager</a> &gt; <a href="index.source.html" class="el_package">com.syfe.financemanager.common</a> &gt; <span class="el_source">GlobalExceptionHandler.java</span></div><h1>GlobalExceptionHandler.java</h1><pre class="source lang-java linenums">package com.syfe.financemanager.common;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestControllerAdvice
+<span class="fc" id="L21">public class GlobalExceptionHandler {</span>
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleBadRequest(BadRequestException ex, HttpServletRequest request) {
+<span class="nc" id="L25">        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI(), null);</span>
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
+<span class="nc" id="L30">        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI(), null);</span>
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleConflict(ConflictException ex, HttpServletRequest request) {
+<span class="nc" id="L35">        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI(), null);</span>
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleForbidden(ForbiddenException ex, HttpServletRequest request) {
+<span class="nc" id="L40">        return buildErrorResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI(), null);</span>
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+<span class="nc" id="L45">        return buildErrorResponse(HttpStatus.FORBIDDEN, &quot;Access denied: you do not have permission to perform this action&quot;, request.getRequestURI(), null);</span>
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+<span class="nc" id="L50">        return buildErrorResponse(HttpStatus.UNAUTHORIZED, &quot;Invalid username or password&quot;, request.getRequestURI(), null);</span>
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleValidationErrors(MethodArgumentNotValidException ex, HttpServletRequest request) {
+<span class="fc" id="L55">        Map&lt;String, String&gt; errors = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {</span>
+<span class="fc" id="L57">            errors.put(fieldError.getField(), fieldError.getDefaultMessage());</span>
+<span class="fc" id="L58">        }</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        String firstMessage = errors.isEmpty() ? &quot;Validation failed&quot; : errors.values().iterator().next();</span>
+<span class="fc" id="L60">        return buildErrorResponse(HttpStatus.BAD_REQUEST, firstMessage, request.getRequestURI(), errors);</span>
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleMessageNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
+<span class="nc" id="L65">        return buildErrorResponse(HttpStatus.BAD_REQUEST, &quot;Malformed JSON request or invalid parameter format&quot;, request.getRequestURI(), null);</span>
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+<span class="nc" id="L70">        String message = String.format(&quot;Parameter '%s' should be of type '%s'&quot;, ex.getName(), </span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">                ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : &quot;unknown&quot;);</span>
+<span class="nc" id="L72">        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request.getRequestURI(), null);</span>
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
+<span class="nc" id="L77">        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI(), null);</span>
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
+<span class="nc" id="L82">        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI(), null);</span>
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleGeneralException(Exception ex, HttpServletRequest request) {
+<span class="fc" id="L87">        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, &quot;An unexpected server error occurred: &quot; + ex.getMessage(), request.getRequestURI(), null);</span>
+    }
+
+    private ResponseEntity&lt;ErrorResponse&gt; buildErrorResponse(HttpStatus status, String message, String path, Map&lt;String, String&gt; validationErrors) {
+<span class="fc" id="L91">        ErrorResponse errorResponse = ErrorResponse.builder()</span>
+<span class="fc" id="L92">                .timestamp(LocalDateTime.now())</span>
+<span class="fc" id="L93">                .status(status.value())</span>
+<span class="fc" id="L94">                .error(status.getReasonPhrase())</span>
+<span class="fc" id="L95">                .message(message)</span>
+<span class="fc" id="L96">                .path(path)</span>
+<span class="fc" id="L97">                .validationErrors(validationErrors)</span>
+<span class="fc" id="L98">                .build();</span>
+<span class="fc" id="L99">        return ResponseEntity.status(status).body(errorResponse);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

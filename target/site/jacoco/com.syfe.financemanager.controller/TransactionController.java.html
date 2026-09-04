@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TransactionController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">personal-finance-manager</a> &gt; <a href="index.source.html" class="el_package">com.syfe.financemanager.controller</a> &gt; <span class="el_source">TransactionController.java</span></div><h1>TransactionController.java</h1><pre class="source lang-java linenums">package com.syfe.financemanager.controller;
+
+import com.syfe.financemanager.dto.auth.MessageResponse;
+import com.syfe.financemanager.dto.transaction.TransactionListResponse;
+import com.syfe.financemanager.dto.transaction.TransactionRequest;
+import com.syfe.financemanager.dto.transaction.TransactionResponse;
+import com.syfe.financemanager.dto.transaction.TransactionUpdateRequest;
+import com.syfe.financemanager.entity.TransactionType;
+import com.syfe.financemanager.entity.User;
+import com.syfe.financemanager.service.AuthService;
+import com.syfe.financemanager.service.TransactionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+
+@RestController
+@RequestMapping(&quot;/api/transactions&quot;)
+@Tag(name = &quot;Transaction Management&quot;, description = &quot;CRUD and filtering operations for financial transactions&quot;)
+public class TransactionController {
+
+    private final TransactionService transactionService;
+    private final AuthService authService;
+
+<span class="fc" id="L30">    public TransactionController(TransactionService transactionService, AuthService authService) {</span>
+<span class="fc" id="L31">        this.transactionService = transactionService;</span>
+<span class="fc" id="L32">        this.authService = authService;</span>
+<span class="fc" id="L33">    }</span>
+
+    @PostMapping
+    @Operation(summary = &quot;Create a financial transaction&quot;)
+    public ResponseEntity&lt;TransactionResponse&gt; createTransaction(@Valid @RequestBody TransactionRequest request) {
+<span class="fc" id="L38">        User currentUser = authService.getCurrentAuthenticatedUser();</span>
+<span class="fc" id="L39">        TransactionResponse response = transactionService.createTransaction(request, currentUser);</span>
+<span class="fc" id="L40">        return ResponseEntity.status(HttpStatus.CREATED).body(response);</span>
+    }
+
+    @GetMapping
+    @Operation(summary = &quot;Retrieve transactions with optional date, category, and type filters&quot;)
+    public ResponseEntity&lt;TransactionListResponse&gt; getTransactions(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) TransactionType type) {
+<span class="fc" id="L51">        User currentUser = authService.getCurrentAuthenticatedUser();</span>
+<span class="fc" id="L52">        TransactionListResponse response = transactionService.getTransactions(currentUser, startDate, endDate, category, categoryId, type);</span>
+<span class="fc" id="L53">        return ResponseEntity.ok(response);</span>
+    }
+
+    @PutMapping(&quot;/{id}&quot;)
+    @Operation(summary = &quot;Update an existing transaction (date field is immutable)&quot;)
+    public ResponseEntity&lt;TransactionResponse&gt; updateTransaction(
+            @PathVariable Long id,
+            @Valid @RequestBody TransactionUpdateRequest request) {
+<span class="fc" id="L61">        User currentUser = authService.getCurrentAuthenticatedUser();</span>
+<span class="fc" id="L62">        TransactionResponse response = transactionService.updateTransaction(id, request, currentUser);</span>
+<span class="fc" id="L63">        return ResponseEntity.ok(response);</span>
+    }
+
+    @DeleteMapping(&quot;/{id}&quot;)
+    @Operation(summary = &quot;Delete a transaction&quot;)
+    public ResponseEntity&lt;MessageResponse&gt; deleteTransaction(@PathVariable Long id) {
+<span class="fc" id="L69">        User currentUser = authService.getCurrentAuthenticatedUser();</span>
+<span class="fc" id="L70">        MessageResponse response = transactionService.deleteTransaction(id, currentUser);</span>
+<span class="fc" id="L71">        return ResponseEntity.ok(response);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

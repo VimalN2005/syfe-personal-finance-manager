@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: personal-finance-manager
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    branch: main
+    healthCheckPath: /api/categories
+    envVars:
+      - key: PORT
+        value: 8080

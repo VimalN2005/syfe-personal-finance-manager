@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TransactionServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">personal-finance-manager</a> &gt; <a href="index.source.html" class="el_package">com.syfe.financemanager.service</a> &gt; <span class="el_source">TransactionServiceImpl.java</span></div><h1>TransactionServiceImpl.java</h1><pre class="source lang-java linenums">package com.syfe.financemanager.service;
+
+import com.syfe.financemanager.common.BadRequestException;
+import com.syfe.financemanager.common.ForbiddenException;
+import com.syfe.financemanager.common.ResourceNotFoundException;
+import com.syfe.financemanager.dto.auth.MessageResponse;
+import com.syfe.financemanager.dto.transaction.TransactionListResponse;
+import com.syfe.financemanager.dto.transaction.TransactionRequest;
+import com.syfe.financemanager.dto.transaction.TransactionResponse;
+import com.syfe.financemanager.dto.transaction.TransactionUpdateRequest;
+import com.syfe.financemanager.entity.Category;
+import com.syfe.financemanager.entity.Transaction;
+import com.syfe.financemanager.entity.TransactionType;
+import com.syfe.financemanager.entity.User;
+import com.syfe.financemanager.repository.CategoryRepository;
+import com.syfe.financemanager.repository.TransactionRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+public class TransactionServiceImpl implements TransactionService {
+
+    private final TransactionRepository transactionRepository;
+    private final CategoryRepository categoryRepository;
+
+    public TransactionServiceImpl(TransactionRepository transactionRepository,
+<span class="fc" id="L30">                                  CategoryRepository categoryRepository) {</span>
+<span class="fc" id="L31">        this.transactionRepository = transactionRepository;</span>
+<span class="fc" id="L32">        this.categoryRepository = categoryRepository;</span>
+<span class="fc" id="L33">    }</span>
+
+    @Override
+    @Transactional
+    public TransactionResponse createTransaction(TransactionRequest request, User user) {
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (request.getDate().isAfter(LocalDate.now())) {</span>
+<span class="fc" id="L39">            throw new BadRequestException(&quot;Transaction date cannot be in the future&quot;);</span>
+        }
+
+<span class="fc" id="L42">        Category category = categoryRepository.findByNameAccessibleByUser(request.getCategory().trim(), user)</span>
+<span class="fc" id="L43">                .orElseThrow(() -&gt; new BadRequestException(&quot;Category not found or not accessible: &quot; + request.getCategory()));</span>
+
+<span class="fc" id="L45">        Transaction transaction = Transaction.builder()</span>
+<span class="fc" id="L46">                .amount(request.getAmount())</span>
+<span class="fc" id="L47">                .date(request.getDate())</span>
+<span class="fc" id="L48">                .category(category)</span>
+<span class="fc" id="L49">                .description(request.getDescription())</span>
+<span class="fc" id="L50">                .user(user)</span>
+<span class="fc" id="L51">                .build();</span>
+
+<span class="fc" id="L53">        Transaction saved = transactionRepository.save(transaction);</span>
+<span class="fc" id="L54">        return mapToResponse(saved);</span>
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TransactionListResponse getTransactions(User user, LocalDate startDate, LocalDate endDate,
+                                                  String categoryName, Long categoryId, TransactionType type) {
+<span class="fc" id="L61">        List&lt;Transaction&gt; transactions = transactionRepository.findByUserOrderByDateDescIdDesc(user)</span>
+<span class="fc" id="L62">                .stream()</span>
+<span class="pc bpc" id="L63" title="2 of 4 branches missed.">                .filter(t -&gt; startDate == null || !t.getDate().isBefore(startDate))</span>
+<span class="pc bpc" id="L64" title="2 of 4 branches missed.">                .filter(t -&gt; endDate == null || !t.getDate().isAfter(endDate))</span>
+<span class="pc bpc" id="L65" title="2 of 4 branches missed.">                .filter(t -&gt; categoryName == null || t.getCategory().getName().equalsIgnoreCase(categoryName.trim()))</span>
+<span class="pc bpc" id="L66" title="2 of 4 branches missed.">                .filter(t -&gt; categoryId == null || t.getCategory().getId().equals(categoryId))</span>
+<span class="pc bpc" id="L67" title="2 of 4 branches missed.">                .filter(t -&gt; type == null || t.getCategory().getType() == type)</span>
+<span class="fc" id="L68">                .toList();</span>
+
+<span class="fc" id="L70">        List&lt;TransactionResponse&gt; responses = transactions.stream()</span>
+<span class="fc" id="L71">                .map(this::mapToResponse)</span>
+<span class="fc" id="L72">                .toList();</span>
+
+<span class="fc" id="L74">        return TransactionListResponse.builder().transactions(responses).build();</span>
+    }
+
+    @Override
+    @Transactional
+    public TransactionResponse updateTransaction(Long id, TransactionUpdateRequest request, User user) {
+<span class="fc" id="L80">        Transaction transaction = transactionRepository.findById(id)</span>
+<span class="pc" id="L81">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Transaction not found with id: &quot; + id));</span>
+
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (!transaction.getUser().getId().equals(user.getId())) {</span>
+<span class="fc" id="L84">            throw new ForbiddenException(&quot;You do not have permission to modify this transaction&quot;);</span>
+        }
+
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (request.getAmount() != null) {</span>
+<span class="fc" id="L88">            transaction.setAmount(request.getAmount());</span>
+        }
+
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (request.getDescription() != null) {</span>
+<span class="fc" id="L92">            transaction.setDescription(request.getDescription());</span>
+        }
+
+<span class="pc bpc" id="L95" title="3 of 4 branches missed.">        if (request.getCategory() != null &amp;&amp; !request.getCategory().isBlank()) {</span>
+<span class="nc" id="L96">            Category category = categoryRepository.findByNameAccessibleByUser(request.getCategory().trim(), user)</span>
+<span class="nc" id="L97">                    .orElseThrow(() -&gt; new BadRequestException(&quot;Category not found or not accessible: &quot; + request.getCategory()));</span>
+<span class="nc" id="L98">            transaction.setCategory(category);</span>
+        }
+
+        // Business Rule: Transaction date is immutable and is deliberately ignored if sent.
+
+<span class="fc" id="L103">        Transaction updated = transactionRepository.save(transaction);</span>
+<span class="fc" id="L104">        return mapToResponse(updated);</span>
+    }
+
+    @Override
+    @Transactional
+    public MessageResponse deleteTransaction(Long id, User user) {
+<span class="fc" id="L110">        Transaction transaction = transactionRepository.findById(id)</span>
+<span class="pc" id="L111">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Transaction not found with id: &quot; + id));</span>
+
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (!transaction.getUser().getId().equals(user.getId())) {</span>
+<span class="fc" id="L114">            throw new ForbiddenException(&quot;You do not have permission to delete this transaction&quot;);</span>
+        }
+
+<span class="fc" id="L117">        transactionRepository.delete(transaction);</span>
+<span class="fc" id="L118">        return MessageResponse.builder().message(&quot;Transaction deleted successfully&quot;).build();</span>
+    }
+
+    private TransactionResponse mapToResponse(Transaction transaction) {
+<span class="fc" id="L122">        return TransactionResponse.builder()</span>
+<span class="fc" id="L123">                .id(transaction.getId())</span>
+<span class="fc" id="L124">                .amount(transaction.getAmount())</span>
+<span class="fc" id="L125">                .date(transaction.getDate())</span>
+<span class="fc" id="L126">                .category(transaction.getCategory().getName())</span>
+<span class="fc" id="L127">                .description(transaction.getDescription())</span>
+<span class="fc" id="L128">                .type(transaction.getCategory().getType())</span>
+<span class="fc" id="L129">                .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
