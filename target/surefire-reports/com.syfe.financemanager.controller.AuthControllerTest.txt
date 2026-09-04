@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.syfe.financemanager.controller.AuthControllerTest
--------------------------------------------------------------------------------
-Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.548 s -- in com.syfe.financemanager.controller.AuthControllerTest
